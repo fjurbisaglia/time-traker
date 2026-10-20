@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#f2f2f7"><title>Tiempo de Leo</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f6fc;color:#182b49}
-*{box-sizing:border-box}body{margin:0}main{max-width:660px;margin:auto;padding:22px 15px 70px}h1{margin:0;font-size:27px}h2{font-size:18px;margin:0}small,.muted{color:#64748b}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0}main{max-width:660px;margin:auto;padding:22px 15px 70px}h1{margin:0;font-size:27px}h2{font-size:18px;margin:0}small,.muted{color:#64748b}
 .card{background:#fff;border-radius:18px;padding:17px;margin:13px 0;box-shadow:0 3px 16px #18345a0b}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.top{margin-bottom:20px}
 button,input,select{font:inherit}button{border:0;border-radius:11px;padding:11px 14px;font-weight:650;cursor:pointer}button:disabled{opacity:.42;cursor:not-allowed}
@@ -195,6 +195,10 @@ async function requestState(method='GET',payload){
   if(!response.ok)throw new Error(response.status===401?'La clave no es correcta.':response.status===503?'Falta configurar el servicio en Cloudflare.':result.error||'No se pudo conectar.');
   if(!Number.isSafeInteger(result.revision)||!(result.state===null||(Array.isArray(result.state?.platforms)&&result.state.days)))throw new Error('Respuesta del servicio inválida.');
   return result;
+ }catch(error){
+  if(error.name==='AbortError')throw new Error('El servicio tardó demasiado. Revisa la conexión y vuelve a intentar.');
+  if(error instanceof TypeError||/failed to fetch|load failed|networkerror/i.test(error.message||''))throw new Error('No se pudo acceder a Cloudflare. Comprueba tu conexión y que ALLOWED_ORIGIN sea exactamente https://fjurbisaglia.github.io, sin barra final ni /time-traker/.');
+  throw error;
  }finally{clearTimeout(timeout)}
 }
 function applySnapshot(snapshot){cloud.revision=snapshot.revision;if(snapshot.state)db=snapshot.state;settle();render()}
@@ -221,7 +225,9 @@ async function mutate(action){
 }
 $('syncForm').onsubmit=async event=>{
  event.preventDefault();if(cloud.busy)return;
- cloud.key=$('syncKey').value.trim();controlsBusy(true);
+ cloud.key=$('syncKey').value.trim();
+ if(cloud.key.length<32){syncMessage('Introduce la clave completa de sincronización (al menos 32 caracteres).');return}
+ syncMessage('Conectando con Cloudflare…');controlsBusy(true);
  try{
   let snapshot=await requestState();
   if(!snapshot.state){

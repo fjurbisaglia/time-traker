@@ -29,22 +29,24 @@ button{border-radius:13px;transition:transform .15s,background .15s;min-height:4
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 </style></head><body><main>
 <header class="row top"><div><p class="eyebrow">UN POCO MÁS DE EQUILIBRIO</p><h1>Tiempo de Leo<span style="color:#7885df">.</span></h1><small>Cada momento cuenta.</small></div><div class="avatar" aria-label="Perfil de Leo">L</div></header>
-<section class="card overview" id="inicio"><div class="row"><label for="day"><b>Tu día, a tu ritmo</b></label><input id="day" type="date"></div><p id="summary" class="muted"></p><div class="row"><button class="secondary" id="today">Volver a hoy</button><span class="pill" id="storageState">Guardado local</span></div></section><div class="section-label"><h2>Mis aplicaciones</h2><span>Un espacio para cada cosa</span></div>
+<section class="card overview" id="inicio"><div class="row"><label for="day"><b>Tu día, a tu ritmo</b></label><input id="day" type="date"></div><p id="summary" class="muted"></p><div class="row"><button class="secondary" id="today">Volver a hoy</button><a class="pill" id="storageState" href="#sync" style="text-decoration:none">Solo este dispositivo</a></div></section><div class="section-label"><h2>Mis aplicaciones</h2><span>Un espacio para cada cosa</span></div>
 <p id="dayContext" class="muted" role="status" style="font-size:13px;line-height:1.6"></p>
 <div id="activities"></div>
-<section class="card" id="sync"><h2>Tus dispositivos</h2><p class="muted" style="font-size:13px;line-height:1.6">Conecta tus dispositivos con la misma clave privada. El día compartido usa la hora de Madrid.</p><form id="syncForm" class="addform"><input id="syncKey" type="password" autocomplete="off" minlength="32" required placeholder="Clave de sincronización" aria-label="Clave de sincronización" style="grid-column:1/-1"><button class="primary" id="connectSync" type="submit">Conectar dispositivos</button></form><p id="syncMessage" class="status" role="status">Sin conectar. Los datos se guardan solo en este dispositivo.</p><button id="disconnectSync" class="secondary" hidden>Desconectar este dispositivo</button></section>
+<section class="card" id="sync"><h2>Tus dispositivos</h2><p class="muted" style="font-size:13px;line-height:1.6">Conecta tus dispositivos con la misma clave privada. El día compartido usa la hora de Madrid.</p><form id="syncForm" class="addform"><input id="syncKey" type="password" autocomplete="off" minlength="32" required placeholder="Clave de sincronización" aria-label="Clave de sincronización" style="grid-column:1/-1"><button class="primary" id="connectSync" type="submit">Conectar dispositivos</button></form><p id="syncMessage" class="status" role="status">Sin conectar: introduce la misma clave en la Mac y en los otros dispositivos para compartir el contador.</p><button id="disconnectSync" class="secondary" hidden>Desconectar este dispositivo</button></section>
 <section class="card add-card" id="agregar"><h2>Agregar plataforma</h2><p class="muted">Por ejemplo: Nintendo Switch, iPad, Roblox o televisión.</p>
 <form id="addForm" class="addform"><input id="newName" maxlength="36" required placeholder="Nombre de la plataforma" aria-label="Nombre de la plataforma">
 <input id="newMinutes" type="number" min="0" max="1440" value="30" required aria-label="Minutos diarios">
 <button class="primary" type="submit">Agregar plataforma</button></form></section>
 <section class="card history-card" id="registro"><div class="row"><h2>Tu actividad</h2><button class="secondary" id="export">Exportar CSV</button></div>
 <p class="muted">Últimos 14 días. Deslizá la tabla si hay muchas plataformas.</p><div id="history" class="scroll"></div></section>
-<details class="notice"><summary>Acerca de las alertas y tus datos</summary><p>Las alertas con sonido se reproducen mientras esta página está abierta y activa. iOS no garantiza que suenen con Safari cerrado o el iPhone bloqueado. Esta aplicación no bloquea otras apps ni dispositivos. Sin conectar dispositivos, los datos se guardan localmente. Con la sincronización activa, se guardan también en el servicio privado de Cloudflare. La clave permite consultar y modificar el estado familiar. Abrir abrir el HTML como archivo puede limitar la persistencia; para uso estable conviene alojarlo en HTTPS.</p></details>
+<details class="notice"><summary>Acerca de las alertas y tus datos</summary><p>Las alertas con sonido se reproducen mientras esta página está abierta y activa. iOS no garantiza que suenen con Safari cerrado o el iPhone bloqueado. Esta aplicación no bloquea otras apps ni dispositivos. Sin conectar dispositivos, los datos se guardan localmente. Con la sincronización activa, se guardan también en el servicio privado de Cloudflare. La clave permite consultar y modificar el estado familiar. Abrir el HTML como archivo puede limitar la persistencia; para uso estable conviene alojarlo en HTTPS.</p></details>
 </main><nav class="tabbar" aria-label="Navegación principal"><a href="#inicio" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Mi día</a><a href="#registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 20V12M12 20V4M19 20V8" stroke-linecap="round"/></svg>Actividad</a><a href="#agregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Agregar</a></nav>
 <script>
 (()=>{'use strict';
 const STORAGE='leo-timer-v1', DEFAULTS=[['ps','PlayStation',55],['yt','YouTube',40],['nf','Netflix',20]];
-const cloud={enabled:false,busy:false,key:'',revision:0};
+const cloud={enabled:false,busy:false,key:'',revision:0,required:false};
+const SYNC_SESSION='leo-sync-key',SYNC_LINKED='leo-sync-linked';
+try{cloud.required=localStorage.getItem(SYNC_LINKED)==='true'}catch{}
 const SYNC_URL='https://time-tracker.fjurbisaglia.workers.dev/state';
 const $=id=>document.getElementById(id);
 const dayString=(date=new Date())=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -60,7 +62,7 @@ try{
   if(old.running&&typeof old.running==='object')db.running=old.running;
  }
 }catch(e){console.warn('No se pudo leer el almacenamiento',e)}
-const save=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(db));$('storageState').textContent=cloud.enabled?'Modo compartido':'Guardado local'}catch(e){$('storageState').textContent='No se pudo guardar';console.warn(e)}};
+const save=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(db));$('storageState').textContent=cloud.enabled?'Conectado a Cloudflare':cloud.required?'Reconectar dispositivos':'Solo este dispositivo'}catch(e){$('storageState').textContent='No se pudo guardar';console.warn(e)}};
 const record=d=>{if(!db.days[d])db.days[d]={limits:{},used:{}};const r=db.days[d];r.limits??={};r.used??={};for(const p of db.platforms){if(r.limits[p.id]===undefined)r.limits[p.id]=p.limit;if(r.used[p.id]===undefined)r.used[p.id]=0;}return r};
 const format=s=>{s=Math.max(0,Math.ceil(s));return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`};
 function appIdentity(name){
@@ -202,7 +204,7 @@ function controlsBusy(busy){
  document.querySelectorAll('[data-start],[data-pause],[data-remove],[data-limit],#addForm input,#addForm button,#connectSync,#disconnectSync,#day,#today').forEach(el=>{if(busy){if(el.dataset.syncDisabled===undefined)el.dataset.syncDisabled=String(el.disabled);el.disabled=true}else if(el.dataset.syncDisabled!==undefined){el.disabled=el.dataset.syncDisabled==='true';delete el.dataset.syncDisabled}});
 }
 async function mutate(action){
- if(!cloud.enabled){action();return}
+ if(!cloud.enabled){if(cloud.required){syncMessage('Introduce la clave para reconectar antes de cambiar el estado compartido.');return}action();return}
  if(cloud.busy)return;
  const previous=JSON.parse(JSON.stringify(db)),revision=cloud.revision;
  controlsBusy(true);
@@ -225,25 +227,30 @@ $('syncForm').onsubmit=async event=>{
   if(!snapshot.state){
    if(!confirm('Todavía no hay datos compartidos. ¿Usar los datos de este dispositivo como estado inicial?'))return;
    settle();
-   // Stop a legacy local session before importing it into the shared Madrid calendar.
-   db.running=null;
+   // Keep today's active local timer when linking the first device.
+   if(db.running){
+    if(db.running.day!==sharedDay(new Date()))throw new Error('El contador local pertenece a otra fecha. Páusalo antes de conectar.');
+    db.running.endAt=sharedMidnight();
+   }
    snapshot=await requestState('PUT',{revision:snapshot.revision,state:db});
   }
-  cloud.enabled=true;applySnapshot(snapshot);
+  cloud.enabled=true;cloud.required=true;$('day').value=today();applySnapshot(snapshot);
+  try{sessionStorage.setItem(SYNC_SESSION,cloud.key);localStorage.setItem(SYNC_LINKED,'true')}catch{}
   $('syncKey').value='';$('syncForm').hidden=true;$('disconnectSync').hidden=false;
   syncMessage('Conectado. El estado se comparte entre tus dispositivos.');
  }catch(error){syncMessage(error.message||'No se pudo conectar. Revisa tu conexión y las variables de Cloudflare.')}
  finally{controlsBusy(false)}
 };
 $('disconnectSync').onclick=()=>{
- if(cloud.busy)return;cloud.enabled=false;cloud.key='';cloud.revision=0;
+ if(cloud.busy)return;cloud.enabled=false;cloud.required=false;cloud.key='';cloud.revision=0;
+ try{sessionStorage.removeItem(SYNC_SESSION);localStorage.removeItem(SYNC_LINKED)}catch{}
  // The downloaded copy remains local; disconnecting never deletes shared data.
  $('syncForm').hidden=false;$('disconnectSync').hidden=true;save();render();
  syncMessage('Desconectado. Esta copia solo se guarda en el dispositivo.');
 };
 async function refreshCloud(){
  if(!cloud.enabled||cloud.busy||document.visibilityState!=='visible')return;
- if(document.activeElement?.matches('input'))return;
+ if(document.activeElement?.matches('[data-limit],#newName,#newMinutes'))return;
  controlsBusy(true);
  try{applySnapshot(await requestState());syncMessage('Sincronizado con tus dispositivos.')}
  catch(error){syncMessage('Sin conexión con el servicio. Los cambios necesitan conexión.');}
@@ -252,6 +259,9 @@ async function refreshCloud(){
 setInterval(refreshCloud,10000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshCloud()});
 
+let resumeKey='';try{resumeKey=sessionStorage.getItem(SYNC_SESSION)||''}catch{}
+if(resumeKey){$('syncKey').value=resumeKey;$('syncForm').onsubmit({preventDefault(){}})}
+else if(cloud.required)syncMessage('Este dispositivo estaba vinculado. Introduce la clave para recuperar el estado compartido; los cambios locales están bloqueados hasta reconectar.');
 settle();render();
 })();
 </script></body></html>

@@ -32,20 +32,24 @@ button{border-radius:13px;transition:transform .15s,background .15s;min-height:4
 <section class="card overview" id="inicio"><div class="row"><label for="day"><b>Tu día, a tu ritmo</b></label><input id="day" type="date"></div><p id="summary" class="muted"></p><div class="row"><button class="secondary" id="today">Volver a hoy</button><span class="pill" id="storageState">Guardado local</span></div></section><div class="section-label"><h2>Mis aplicaciones</h2><span>Un espacio para cada cosa</span></div>
 <p id="dayContext" class="muted" role="status" style="font-size:13px;line-height:1.6"></p>
 <div id="activities"></div>
+<section class="card" id="sync"><h2>Tus dispositivos</h2><p class="muted" style="font-size:13px;line-height:1.6">Conecta tus dispositivos con la misma clave privada. El día compartido usa la hora de Madrid.</p><form id="syncForm" class="addform"><input id="syncKey" type="password" autocomplete="off" minlength="32" required placeholder="Clave de sincronización" aria-label="Clave de sincronización" style="grid-column:1/-1"><button class="primary" id="connectSync" type="submit">Conectar dispositivos</button></form><p id="syncMessage" class="status" role="status">Sin conectar. Los datos se guardan solo en este dispositivo.</p><button id="disconnectSync" class="secondary" hidden>Desconectar este dispositivo</button></section>
 <section class="card add-card" id="agregar"><h2>Agregar plataforma</h2><p class="muted">Por ejemplo: Nintendo Switch, iPad, Roblox o televisión.</p>
 <form id="addForm" class="addform"><input id="newName" maxlength="36" required placeholder="Nombre de la plataforma" aria-label="Nombre de la plataforma">
 <input id="newMinutes" type="number" min="0" max="1440" value="30" required aria-label="Minutos diarios">
 <button class="primary" type="submit">Agregar plataforma</button></form></section>
 <section class="card history-card" id="registro"><div class="row"><h2>Tu actividad</h2><button class="secondary" id="export">Exportar CSV</button></div>
 <p class="muted">Últimos 14 días. Deslizá la tabla si hay muchas plataformas.</p><div id="history" class="scroll"></div></section>
-<details class="notice"><summary>Acerca de las alertas y tus datos</summary><p>Las alertas con sonido se reproducen mientras esta página está abierta y activa. iOS no garantiza que suenen con Safari cerrado o el iPhone bloqueado. Esta aplicación no bloquea otras apps ni dispositivos. Los datos se guardan localmente en el navegador, pero abrir el HTML como archivo puede limitar la persistencia; para uso estable conviene alojarlo en HTTPS.</p></details>
+<details class="notice"><summary>Acerca de las alertas y tus datos</summary><p>Las alertas con sonido se reproducen mientras esta página está abierta y activa. iOS no garantiza que suenen con Safari cerrado o el iPhone bloqueado. Esta aplicación no bloquea otras apps ni dispositivos. Sin conectar dispositivos, los datos se guardan localmente. Con la sincronización activa, se guardan también en el servicio privado de Cloudflare. La clave permite consultar y modificar el estado familiar. Abrir abrir el HTML como archivo puede limitar la persistencia; para uso estable conviene alojarlo en HTTPS.</p></details>
 </main><nav class="tabbar" aria-label="Navegación principal"><a href="#inicio" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Mi día</a><a href="#registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 20V12M12 20V4M19 20V8" stroke-linecap="round"/></svg>Actividad</a><a href="#agregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Agregar</a></nav>
 <script>
 (()=>{'use strict';
 const STORAGE='leo-timer-v1', DEFAULTS=[['ps','PlayStation',55],['yt','YouTube',40],['nf','Netflix',20]];
+const cloud={enabled:false,busy:false,key:'',revision:0};
+const SYNC_URL='https://time-tracker.fjurbisaglia.workers.dev/state';
 const $=id=>document.getElementById(id);
 const dayString=(date=new Date())=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-const today=()=>dayString();
+const sharedDay=date=>{const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);return ['year','month','day'].map(k=>parts.find(p=>p.type===k).value).join('-')};
+const today=()=>cloud.enabled?sharedDay(new Date()):dayString();
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let db={platforms:DEFAULTS.map(([id,name,limit])=>({id,name,limit})),days:{},running:null};
 try{
@@ -56,7 +60,7 @@ try{
   if(old.running&&typeof old.running==='object')db.running=old.running;
  }
 }catch(e){console.warn('No se pudo leer el almacenamiento',e)}
-const save=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(db));$('storageState').textContent='Guardado local'}catch(e){$('storageState').textContent='No se pudo guardar';console.warn(e)}};
+const save=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(db));$('storageState').textContent=cloud.enabled?'Modo compartido':'Guardado local'}catch(e){$('storageState').textContent='No se pudo guardar';console.warn(e)}};
 const record=d=>{if(!db.days[d])db.days[d]={limits:{},used:{}};const r=db.days[d];r.limits??={};r.used??={};for(const p of db.platforms){if(r.limits[p.id]===undefined)r.limits[p.id]=p.limit;if(r.used[p.id]===undefined)r.used[p.id]=0;}return r};
 const format=s=>{s=Math.max(0,Math.ceil(s));return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`};
 function appIdentity(name){
@@ -84,7 +88,7 @@ function settle(){
  const d=run.day||dayString(new Date(from));
  run.day=d;
  const startOfDay=new Date(d+'T00:00:00');
- const endOfDay=new Date(startOfDay.getFullYear(),startOfDay.getMonth(),startOfDay.getDate()+1).getTime();
+ const endOfDay=run.endAt||new Date(startOfDay.getFullYear(),startOfDay.getMonth(),startOfDay.getDate()+1).getTime();
  if(!Number.isFinite(endOfDay)){db.running=null;save();return}
  const until=Math.min(now,endOfDay),r=record(d),max=clamp(r.limits[p.id])*60;
  const previous=Number(r.used[p.id])||0;
@@ -107,7 +111,7 @@ function start(id){
  const r=record(today()),p=db.platforms.find(p=>p.id===id);
  if(!p)return;
  if(r.used[id]>=clamp(r.limits[id])*60)return alert('Ya se agotó el tiempo permitido.');
- db.running={id,day:today(),updatedAt:Date.now(),warned:clamp(r.limits[id])*60-r.used[id]<=300,finished:false};
+ db.running={id,day:today(),...(cloud.enabled?{endAt:sharedMidnight()}:{}),updatedAt:Date.now(),warned:clamp(r.limits[id])*60-r.used[id]<=300,finished:false};
  save();render();
 }
 function updateLimit(id,value){
@@ -139,17 +143,17 @@ function render(){
   <button class="secondary" data-pause="${escapeHTML(p.id)}" ${!isRunning?'disabled':''}>Pausar</button>
   <button class="danger" data-remove="${escapeHTML(p.id)}">Eliminar</button></div></section>`;
  }).join('')||'<section class="card">Agregá una plataforma para empezar.</section>';
- document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>start(b.dataset.start));
- document.querySelectorAll('[data-pause]').forEach(b=>b.onclick=pause);
- document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removePlatform(b.dataset.remove));
- document.querySelectorAll('[data-limit]').forEach(i=>i.onchange=()=>updateLimit(i.dataset.limit,i.value));
+ document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>mutate(()=>start(b.dataset.start)));
+ document.querySelectorAll('[data-pause]').forEach(b=>b.onclick=()=>mutate(pause));
+ document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>mutate(()=>removePlatform(b.dataset.remove)));
+ document.querySelectorAll('[data-limit]').forEach(i=>i.onchange=()=>{const value=i.value;mutate(()=>updateLimit(i.dataset.limit,value))});
  let table='<table><thead><tr><th>Fecha</th>'+db.platforms.map(p=>`<th>${escapeHTML(p.name)}</th>`).join('')+'</tr></thead><tbody>';
  for(let i=0;i<14;i++){const date=new Date();date.setDate(date.getDate()-i);const key=dayString(date),rec=record(key);table+=`<tr><td>${key}</td>`+db.platforms.map(p=>`<td>${((Number(rec.used[p.id])||0)/60).toFixed(1)} min</td>`).join('')+'</tr>'}
  $('history').innerHTML=table+'</tbody></table>';
  save();
 }
 $('addForm').onsubmit=e=>{
- e.preventDefault();settle();
+ e.preventDefault();mutate(()=>{settle();
  const name=$('newName').value.trim(),limit=clamp($('newMinutes').value);
  if(!name)return;
  if(db.platforms.some(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase()))return alert('Ya existe una plataforma con ese nombre.');
@@ -158,7 +162,7 @@ $('addForm').onsubmit=e=>{
  // Aplicar el límite inicial a la fecha seleccionada.
  record($('day').value).limits[id]=limit;
  $('newName').value='';save();render();
-};
+});};
 document.querySelectorAll('.tabbar a').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.tabbar a').forEach(link=>link.classList.toggle('active',link===a))}));
 $('day').value=today();
 $('day').onchange=()=>{settle();render()};
@@ -173,7 +177,81 @@ $('export').onclick=()=>{
 };
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){settle();render()}});
 window.addEventListener('pagehide',settle);
-setInterval(()=>{if(db.running){settle();if(!db.running){render();return}if($('day').value!==db.running.day)return;const id=db.running.id,r=record(db.running.day),max=clamp(r.limits[id])*60,used=r.used[id]||0;const clock=$('clock-'+id),bar=$('bar-'+id),status=$('status-'+id);if(clock)clock.textContent=format(max-used);if(bar)bar.style.width=(max?Math.min(100,used/max*100):100)+'%';if(status)status.textContent=`Contando… · ${(used/60).toFixed(1)} min usados`}},1000);
+setInterval(()=>{if(cloud.busy)return;if(db.running){settle();if(!db.running){render();return}if($('day').value!==db.running.day)return;const id=db.running.id,r=record(db.running.day),max=clamp(r.limits[id])*60,used=r.used[id]||0;const clock=$('clock-'+id),bar=$('bar-'+id),status=$('status-'+id);if(clock)clock.textContent=format(max-used);if(bar)bar.style.width=(max?Math.min(100,used/max*100):100)+'%';if(status)status.textContent=`Contando… · ${(used/60).toFixed(1)} min usados`}},1000);
+
+function sharedMidnight(){
+ let low=Date.now(),high=low+36*3600000;const day=sharedDay(new Date(low));
+ while(high-low>1){const mid=Math.floor((high+low)/2);if(sharedDay(new Date(mid))===day)low=mid;else high=mid}
+ return high;
+}
+async function requestState(method='GET',payload){
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
+ try{
+  const response=await fetch(SYNC_URL,{method,headers:{Authorization:'Bearer '+cloud.key,...(payload?{'Content-Type':'application/json'}:{})},...(payload?{body:JSON.stringify(payload)}:{}),signal:controller.signal,cache:'no-store'});
+  const result=await response.json();
+  if(response.status===409){const error=new Error('Otro dispositivo cambió el estado. Se ha actualizado la pantalla; repite tu acción.');error.snapshot=result;throw error}
+  if(!response.ok)throw new Error(response.status===401?'La clave no es correcta.':response.status===503?'Falta configurar el servicio en Cloudflare.':result.error||'No se pudo conectar.');
+  if(!Number.isSafeInteger(result.revision)||!(result.state===null||(Array.isArray(result.state?.platforms)&&result.state.days)))throw new Error('Respuesta del servicio inválida.');
+  return result;
+ }finally{clearTimeout(timeout)}
+}
+function applySnapshot(snapshot){cloud.revision=snapshot.revision;if(snapshot.state)db=snapshot.state;settle();render()}
+function syncMessage(message){$('syncMessage').textContent=message}
+function controlsBusy(busy){
+ cloud.busy=busy;
+ document.querySelectorAll('[data-start],[data-pause],[data-remove],[data-limit],#addForm input,#addForm button,#connectSync,#disconnectSync,#day,#today').forEach(el=>{if(busy){if(el.dataset.syncDisabled===undefined)el.dataset.syncDisabled=String(el.disabled);el.disabled=true}else if(el.dataset.syncDisabled!==undefined){el.disabled=el.dataset.syncDisabled==='true';delete el.dataset.syncDisabled}});
+}
+async function mutate(action){
+ if(!cloud.enabled){action();return}
+ if(cloud.busy)return;
+ const previous=JSON.parse(JSON.stringify(db)),revision=cloud.revision;
+ controlsBusy(true);
+ try{
+  // Save against the revision the user actually saw. Never silently rebase a stale action.
+  action();controlsBusy(true);
+  const next=await requestState('PUT',{revision,state:db});applySnapshot(next);
+  syncMessage('Sincronizado. Los demás dispositivos se actualizan en unos segundos.');
+ }catch(error){
+  db=previous;
+  if(error.snapshot)applySnapshot(error.snapshot);else{save();render()}
+  syncMessage(error.message||'Sin conexión. No se guardó el cambio; vuelve a intentarlo.');
+ }finally{controlsBusy(false)}
+}
+$('syncForm').onsubmit=async event=>{
+ event.preventDefault();if(cloud.busy)return;
+ cloud.key=$('syncKey').value.trim();controlsBusy(true);
+ try{
+  let snapshot=await requestState();
+  if(!snapshot.state){
+   if(!confirm('Todavía no hay datos compartidos. ¿Usar los datos de este dispositivo como estado inicial?'))return;
+   settle();
+   // Stop a legacy local session before importing it into the shared Madrid calendar.
+   db.running=null;
+   snapshot=await requestState('PUT',{revision:snapshot.revision,state:db});
+  }
+  cloud.enabled=true;applySnapshot(snapshot);
+  $('syncKey').value='';$('syncForm').hidden=true;$('disconnectSync').hidden=false;
+  syncMessage('Conectado. El estado se comparte entre tus dispositivos.');
+ }catch(error){syncMessage(error.message||'No se pudo conectar. Revisa tu conexión y las variables de Cloudflare.')}
+ finally{controlsBusy(false)}
+};
+$('disconnectSync').onclick=()=>{
+ if(cloud.busy)return;cloud.enabled=false;cloud.key='';cloud.revision=0;
+ // The downloaded copy remains local; disconnecting never deletes shared data.
+ $('syncForm').hidden=false;$('disconnectSync').hidden=true;save();render();
+ syncMessage('Desconectado. Esta copia solo se guarda en el dispositivo.');
+};
+async function refreshCloud(){
+ if(!cloud.enabled||cloud.busy||document.visibilityState!=='visible')return;
+ if(document.activeElement?.matches('input'))return;
+ controlsBusy(true);
+ try{applySnapshot(await requestState());syncMessage('Sincronizado con tus dispositivos.')}
+ catch(error){syncMessage('Sin conexión con el servicio. Los cambios necesitan conexión.');}
+ finally{controlsBusy(false)}
+}
+setInterval(refreshCloud,10000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshCloud()});
+
 settle();render();
 })();
 </script></body></html>

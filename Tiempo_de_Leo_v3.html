@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e3a8a"><title>Tiempo de Leo</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f6fc;color:#182b49}
+*{box-sizing:border-box}body{margin:0}main{max-width:660px;margin:auto;padding:22px 15px 70px}h1{margin:0;font-size:27px}h2{font-size:18px;margin:0}small,.muted{color:#64748b}
+.card{background:#fff;border-radius:18px;padding:17px;margin:13px 0;box-shadow:0 3px 16px #18345a0b}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.top{margin-bottom:20px}
+button,input,select{font:inherit}button{border:0;border-radius:11px;padding:11px 14px;font-weight:650;cursor:pointer}button:disabled{opacity:.42;cursor:not-allowed}
+.primary{background:#2563eb;color:#fff}.secondary{background:#e9eef7;color:#213b5d}.danger{background:#fee2e2;color:#991b1b}
+input{border:1px solid #cbd5e1;border-radius:9px;padding:10px;background:white;min-width:0}
+input[type=number]{width:78px;text-align:center}input[type=date]{max-width:175px}
+.clock{font-size:38px;font-weight:800;font-variant-numeric:tabular-nums;margin:12px 0 8px}
+.track{height:10px;border-radius:20px;background:#e2e8f0;overflow:hidden}.fill{height:100%;background:#2563eb}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.status{font-size:13px;color:#64748b;margin:9px 0 0}
+.addform{display:grid;grid-template-columns:1fr 88px;gap:9px;margin-top:13px}.addform button{grid-column:1/-1}
+.notice{font-size:13px;line-height:1.5;background:#fff7ed;border:1px solid #fed7aa;border-radius:13px;padding:12px;margin-top:18px}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid #e2e8f0;padding:9px 6px;text-align:left;white-space:nowrap}
+.scroll{overflow-x:auto}label{font-size:13px} .pill{font-size:12px;background:#eff6ff;color:#1d4ed8;padding:5px 9px;border-radius:30px}
+</style></head><body><main>
+<div class="row top"><div><h1>⏱️ Tiempo de Leo</h1><small>Contadores diarios de pantallas</small></div><span class="pill" id="storageState">Guardado local</span></div>
+<section class="card"><div class="row"><label for="day"><b>Fecha</b></label><input id="day" type="date"></div><p id="summary" class="muted"></p><button class="secondary" id="today">Volver a hoy</button></section>
+<div id="activities"></div>
+<section class="card"><h2>➕ Agregar plataforma</h2><p class="muted">Por ejemplo: Nintendo Switch, iPad, Roblox o televisión.</p>
+<form id="addForm" class="addform"><input id="newName" maxlength="36" required placeholder="Nombre de la plataforma" aria-label="Nombre de la plataforma">
+<input id="newMinutes" type="number" min="0" max="1440" value="30" required aria-label="Minutos diarios">
+<button class="primary" type="submit">Agregar plataforma</button></form></section>
+<section class="card"><div class="row"><h2>Registro diario</h2><button class="secondary" id="export">Exportar CSV</button></div>
+<p class="muted">Últimos 14 días. Deslizá la tabla si hay muchas plataformas.</p><div id="history" class="scroll"></div></section>
+<p class="notice">🔔 Las alertas con sonido se reproducen mientras esta página está abierta y activa. iOS no garantiza que suenen con Safari cerrado o el iPhone bloqueado. Esta aplicación no bloquea otras apps ni dispositivos. Los datos se guardan localmente en el navegador, pero abrir el HTML como archivo puede limitar la persistencia; para uso estable conviene alojarlo en HTTPS.</p>
+</main>
+<script>
+(()=>{'use strict';
+const STORAGE='leo-timer-v1', DEFAULTS=[['ps','PlayStation',55],['yt','YouTube',40],['nf','Netflix',20]];
+const $=id=>document.getElementById(id);
+const dayString=(date=new Date())=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+const today=()=>dayString();
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let db={platforms:DEFAULTS.map(([id,name,limit])=>({id,name,limit})),days:{},running:null};
+try{
+ const old=JSON.parse(localStorage.getItem(STORAGE)||'null');
+ if(old&&typeof old==='object'){
+  if(Array.isArray(old.platforms))db.platforms=old.platforms.filter(p=>p&&typeof p.id==='string'&&typeof p.name==='string').map(p=>({id:p.id,name:p.name,limit:Number(p.limit)||0}));
+  if(old.days&&typeof old.days==='object')db.days=old.days;
+  if(old.running&&typeof old.running==='object')db.running=old.running;
+ }
+}catch(e){console.warn('No se pudo leer el almacenamiento',e)}
+const save=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(db));$('storageState').textContent='Guardado local'}catch(e){$('storageState').textContent='No se pudo guardar';console.warn(e)}};
+const record=d=>{if(!db.days[d])db.days[d]={limits:{},used:{}};const r=db.days[d];r.limits??={};r.used??={};for(const p of db.platforms){if(r.limits[p.id]===undefined)r.limits[p.id]=p.limit;if(r.used[p.id]===undefined)r.used[p.id]=0;}return r};
+const format=s=>{s=Math.max(0,Math.ceil(s));return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`};
+const clamp=n=>Math.max(0,Math.min(1440,Math.round(Number(n)||0)));
+let audioCtx=null;
+function sound(){try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=830;g.gain.value=.15;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.4)}catch(e){}}
+function alertUser(msg){sound();if(document.visibilityState==='visible')setTimeout(()=>window.alert(msg),50)}
+function settle(){
+ const run=db.running;if(!run)return;
+ const now=Date.now(),from=Number(run.updatedAt)||now;
+ if(now<=from)return;
+ const p=db.platforms.find(p=>p.id===run.id);
+ if(!p){db.running=null;save();return}
+ let cursor=from;
+ while(cursor<now){
+  const d=dayString(new Date(cursor)),next=new Date(new Date(cursor).getFullYear(),new Date(cursor).getMonth(),new Date(cursor).getDate()+1).getTime();
+  const until=Math.min(now,next),r=record(d),max=clamp(r.limits[p.id])*60;
+  const previous=Number(r.used[p.id])||0;
+  const current=Math.min(max,previous+(until-cursor)/1000);
+  r.used[p.id]=current;
+  if(d===today()){
+   const left=max-current;
+   if(left<=300&&left>0&&!run.warned){run.warned=true;alertUser(`A Leo le quedan 5 minutos de ${p.name}.`)}
+   if(left<=0&&!run.finished){run.finished=true;alertUser(`¡Se terminó el tiempo de ${p.name} por hoy!`)}
+  }
+  if(current>=max){db.running=null;break}
+  cursor=until;
+ }
+ if(db.running)db.running.updatedAt=now;
+ save();
+}
+function pause(){settle();db.running=null;save();render()}
+function start(id){
+ if($('day').value!==today())return alert('Solo podés iniciar el contador del día de hoy.');
+ settle();if(db.running)db.running=null;
+ const r=record(today()),p=db.platforms.find(p=>p.id===id);
+ if(!p)return;
+ if(r.used[id]>=clamp(r.limits[id])*60)return alert('Ya se agotó el tiempo permitido.');
+ db.running={id,updatedAt:Date.now(),warned:clamp(r.limits[id])*60-r.used[id]<=300,finished:false};
+ save();render();
+}
+function updateLimit(id,value){
+ settle();const r=record($('day').value);
+ r.limits[id]=clamp(value);
+ if(db.running?.id===id&&$('day').value===today()&&r.used[id]>=r.limits[id]*60)db.running=null;
+ save();render();
+}
+function removePlatform(id){
+ const p=db.platforms.find(p=>p.id===id);
+ if(!p||!confirm(`¿Eliminar ${p.name}? Se eliminará también su historial.`))return;
+ settle();if(db.running?.id===id)db.running=null;
+ db.platforms=db.platforms.filter(p=>p.id!==id);
+ for(const r of Object.values(db.days)){delete r.limits?.[id];delete r.used?.[id]}
+ save();render();
+}
+function render(){
+ const d=$('day').value||today(),r=record(d);
+ $('summary').textContent=`Límite total: ${Math.floor(db.platforms.reduce((a,p)=>a+clamp(r.limits[p.id]),0)/60)} h ${db.platforms.reduce((a,p)=>a+clamp(r.limits[p.id]),0)%60} min`;
+ $('activities').innerHTML=db.platforms.map(p=>{
+  const max=clamp(r.limits[p.id])*60,used=Math.max(0,Number(r.used[p.id])||0),left=Math.max(0,max-used),isRunning=db.running?.id===p.id&&d===today();
+  const pct=max?Math.min(100,used/max*100):100;
+  return `<section class="card"><div class="row"><b style="font-size:19px">${escapeHTML(p.name)}</b><div><label for="lim-${escapeHTML(p.id)}">Límite (min) </label><input type="number" min="0" max="1440" id="lim-${escapeHTML(p.id)}" data-limit="${escapeHTML(p.id)}" value="${clamp(r.limits[p.id])}"></div></div>
+  <div class="clock" id="clock-${escapeHTML(p.id)}">${format(left)}</div><div class="track"><div class="fill" id="bar-${escapeHTML(p.id)}" style="width:${pct}%"></div></div>
+  <p class="status" id="status-${escapeHTML(p.id)}">${left<=0?'Tiempo agotado':isRunning?'Contando…':'En pausa'} · ${(used/60).toFixed(1)} min usados</p>
+  <div class="actions"><button class="primary" data-start="${escapeHTML(p.id)}" ${d!==today()||isRunning||left<=0?'disabled':''}>${used>0?'Continuar':'Iniciar'}</button>
+  <button class="secondary" data-pause="${escapeHTML(p.id)}" ${!isRunning?'disabled':''}>Pausar</button>
+  <button class="danger" data-remove="${escapeHTML(p.id)}">Eliminar</button></div></section>`;
+ }).join('')||'<section class="card">Agregá una plataforma para empezar.</section>';
+ document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>start(b.dataset.start));
+ document.querySelectorAll('[data-pause]').forEach(b=>b.onclick=pause);
+ document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removePlatform(b.dataset.remove));
+ document.querySelectorAll('[data-limit]').forEach(i=>i.onchange=()=>updateLimit(i.dataset.limit,i.value));
+ let table='<table><thead><tr><th>Fecha</th>'+db.platforms.map(p=>`<th>${escapeHTML(p.name)}</th>`).join('')+'</tr></thead><tbody>';
+ for(let i=0;i<14;i++){const date=new Date();date.setDate(date.getDate()-i);const key=dayString(date),rec=record(key);table+=`<tr><td>${key}</td>`+db.platforms.map(p=>`<td>${((Number(rec.used[p.id])||0)/60).toFixed(1)} min</td>`).join('')+'</tr>'}
+ $('history').innerHTML=table+'</tbody></table>';
+ save();
+}
+$('addForm').onsubmit=e=>{
+ e.preventDefault();settle();
+ const name=$('newName').value.trim(),limit=clamp($('newMinutes').value);
+ if(!name)return;
+ if(db.platforms.some(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase()))return alert('Ya existe una plataforma con ese nombre.');
+ const id='custom-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
+ db.platforms.push({id,name,limit});
+ // Aplicar el límite inicial a la fecha seleccionada.
+ record($('day').value).limits[id]=limit;
+ $('newName').value='';save();render();
+};
+$('day').value=today();
+$('day').onchange=()=>{settle();render()};
+$('today').onclick=()=>{$('day').value=today();render()};
+$('export').onclick=()=>{
+ settle();
+ const header=['Fecha',...db.platforms.map(p=>p.name+' (min)')],rows=[header];
+ for(const date of Object.keys(db.days).sort()){const r=record(date);rows.push([date,...db.platforms.map(p=>((Number(r.used[p.id])||0)/60).toFixed(2))])}
+ const csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
+ a.href=url;a.download='historial-tiempo-de-leo.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);
+};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){settle();render()}});
+window.addEventListener('pagehide',settle);
+setInterval(()=>{if(db.running){settle();if(!db.running){render();return}const id=db.running.id,r=record(today()),max=clamp(r.limits[id])*60,used=r.used[id]||0;const clock=$('clock-'+id),bar=$('bar-'+id),status=$('status-'+id);if(clock)clock.textContent=format(max-used);if(bar)bar.style.width=(max?Math.min(100,used/max*100):100)+'%';if(status)status.textContent=`Contando… · ${(used/60).toFixed(1)} min usados`}},1000);
+settle();render();
+})();
+</script></body></html>

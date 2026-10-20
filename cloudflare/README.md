@@ -1,7 +1,7 @@
 # Servicio privado de Tiempo de Leo
 
 Este servicio guarda un único estado familiar como JSON en un Durable Object.
-La interfaz de GitHub Pages todavía necesita conectarse a esta API; publicar el servicio por sí solo no activa la sincronización.
+La interfaz apunta a `https://time-tracker.fjurbisaglia.workers.dev/state`. Tras publicar el HTML actualizado en GitHub Pages, abre «Tus dispositivos» e introduce la clave privada en cada dispositivo. La clave se conserva solo en memoria: al recargar hay que volver a introducirla. El origen permitido es `https://fjurbisaglia.github.io`.
 
 ## Publicación desde la carpeta del proyecto
 
@@ -22,6 +22,6 @@ Todas las peticiones incluyen `Authorization: Bearer <clave familiar>`.
 - `PUT /state`: cuerpo `{revision, state}`. Envía la revisión que se leyó antes de editar. Devuelve la siguiente revisión.
 - `409`: otro dispositivo guardó antes. Devuelve la revisión y estado actuales. La interfaz debe recuperar esos datos y pedir repetir la acción; nunca reenviar automáticamente una copia antigua completa.
 
-La interfaz deberá pedir la clave por dispositivo (no incrustarla en el HTML público), consultar periódicamente el estado y al recuperar el foco, y enviar cambios solo ante acciones del usuario. El paso de cada segundo se calcula visualmente desde la marca temporal, sin escribir al servidor cada segundo. En modo compartido, los cambios deben esperar la confirmación del servidor y bloquearse sin conexión para evitar divergencias. Antes de la primera importación hay que confirmar qué dispositivo contiene los datos que se desean conservar. Las operaciones entre distintas zonas horarias deberán usar un día familiar común.
+La interfaz pide la clave por dispositivo (sin incrustarla en el HTML público), consulta cada 10 segundos mientras está visible y al recuperar el foco, y envía cambios solo ante acciones del usuario. El paso de cada segundo se calcula visualmente desde la marca temporal, sin escribir al servidor cada segundo. En modo compartido, los cambios deben esperar la confirmación del servidor y bloquearse sin conexión para evitar divergencias. La primera conexión pide confirmación antes de importar los datos locales y detiene la sesión local al importarla. Los demás dispositivos descargan los datos compartidos. El día familiar común usa Europe/Madrid.
 
 La clave familiar da acceso de lectura y escritura. Cambiarla en Cloudflare revoca el acceso de todos los dispositivos hasta que introduzcan la nueva clave.

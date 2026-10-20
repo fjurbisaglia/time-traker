@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1e3a8a"><title>Tiempo de Leo</title>
+<meta name="theme-color" content="#f2f2f7"><title>Tiempo de Leo</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f6fc;color:#182b49}
 *{box-sizing:border-box}body{margin:0}main{max-width:660px;margin:auto;padding:22px 15px 70px}h1{margin:0;font-size:27px}h2{font-size:18px;margin:0}small,.muted{color:#64748b}
@@ -17,18 +17,28 @@ input[type=number]{width:78px;text-align:center}input[type=date]{max-width:175px
 .notice{font-size:13px;line-height:1.5;background:#fff7ed;border:1px solid #fed7aa;border-radius:13px;padding:12px;margin-top:18px}
 table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid #e2e8f0;padding:9px 6px;text-align:left;white-space:nowrap}
 .scroll{overflow-x:auto}label{font-size:13px} .pill{font-size:12px;background:#eff6ff;color:#1d4ed8;padding:5px 9px;border-radius:30px}
+
+/* iOS-inspired interface, with native system typography and controls. */
+:root{background:#f2f2f7;color:#1c1c1e;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;font-synthesis:none}
+body{background:radial-gradient(ellipse at 90% 0%,#e3eaff 0,transparent 36%),#f2f2f7;min-height:100vh}
+main{max-width:760px;padding:48px 24px 110px}h1{font-size:36px;letter-spacing:-1.4px;line-height:1.15}h2{font-size:20px;letter-spacing:-.5px}.muted,small{color:#86868b}.top{margin-bottom:28px;align-items:center}.eyebrow{font-size:11px;font-weight:750;letter-spacing:2px;color:#8e8e93;margin:0 0 9px}.top small{display:block;margin-top:9px;font-size:15px}.avatar{width:48px;height:48px;display:grid;place-items:center;background:#e3eaff;border:4px solid white;border-radius:50%;color:#5265c9;font-weight:750;box-shadow:0 3px 12px #2337730c}
+.card{border-radius:24px;padding:24px;margin:16px 0;box-shadow:0 4px 24px #1c1c4004;border:1px solid #ffffffb3}.overview{background:linear-gradient(125deg,#5669de,#7885eb);color:white;position:relative;overflow:hidden}.overview .muted{color:#e3e6ff}.overview label{font-size:15px}.overview input{background:#ffffff20;color:white;border:1px solid #ffffff30;color-scheme:dark}.overview .secondary{background:#ffffff25;color:white;font-size:12px}.overview #summary{font-size:27px;font-weight:700;letter-spacing:-.7px;margin:22px 0 16px}.pill{display:inline-flex;align-items:center;gap:6px;background:#ffffffaa;color:#777882;font-size:11px;padding:6px 10px}.pill:before{content:'';width:5px;height:5px;background:#34c759;border-radius:50%}.section-label{display:flex;justify-content:space-between;align-items:center;margin:30px 3px 12px}.section-label h2{font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:#85858e}.section-label span{font-size:12px;color:#9898a0}
+button{border-radius:13px;transition:transform .15s,background .15s;min-height:42px}button:active{transform:scale(.97)}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #8d9bff;outline-offset:3px}.primary{background:#6876df}.secondary{background:#f2f2f7;color:#6f707d}.danger{background:transparent;color:#b0b0b7;font-size:12px}input{border-color:#e9e9ee;border-radius:11px;background:#f9f9fb;padding:10px;color:#333}input[type=number]{width:66px;font-weight:650}input[type=date]{font-size:13px}.platform-card{--accent:#5369d8}.platform-heading{display:flex;gap:13px;align-items:center}.platform-heading b{display:block;font-size:18px;letter-spacing:-.4px}.platform-heading small{display:block;margin-top:4px;font-size:12px}.app-icon{display:grid;place-items:center;width:50px;height:50px;border-radius:14px;background:var(--accent);color:white;flex-shrink:0;box-shadow:0 4px 9px color-mix(in srgb,var(--accent) 20%,transparent)}.app-icon svg{width:32px;height:32px}.limit-control{display:flex;align-items:center;gap:8px}.limit-control label{font-size:11px;color:#8e8e93}.clock{font-size:44px;letter-spacing:-1.7px;font-weight:650;margin:24px 0 14px;line-height:1.1}.clock-caption{font-size:10px;letter-spacing:1.5px;color:#9898a1;text-transform:uppercase;margin-bottom:6px}.track{height:6px;background:#f0f0f5}.fill{background:var(--accent);border-radius:20px;transition:width .3s}.status{font-size:12px;margin-top:10px}.actions{margin-top:20px;align-items:center}.actions .primary{background:var(--accent);min-width:112px}.actions .danger{margin-left:auto}.platform-card.running{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}.add-card p,.history-card p{font-size:13px;line-height:1.6}.add-card h2:before{content:'+';display:inline-grid;place-items:center;width:28px;height:28px;margin-right:9px;border-radius:8px;color:#6876df;background:#eef0ff}.addform{grid-template-columns:1fr 78px}.addform button{background:#eef0ff;color:#626fd0}.history-card button{font-size:12px}th{color:#8e8e93;font-size:11px;font-weight:500}td,th{padding:13px 8px;border-color:#f0f0f5}td{font-variant-numeric:tabular-nums;color:#60606a}.notice{background:transparent;border:0;color:#90909a;font-size:11px;padding:5px 6px;line-height:1.7}.notice summary{cursor:pointer;color:#81818c;font-weight:600}.tabbar{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:100px;background:#ffffffdd;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid #e5e5ec;padding:12px 20px calc(12px + env(safe-area-inset-bottom));z-index:5}.tabbar a{display:flex;flex-direction:column;align-items:center;gap:5px;color:#8e8e93;text-decoration:none;font-size:10px;font-weight:600}.tabbar a.active{color:#6876df}.tabbar svg{width:23px;height:23px}html{scroll-behavior:smooth;scroll-padding-top:20px}
+@media(min-width:680px){#activities{display:grid;grid-template-columns:1fr 1fr;gap:16px}#activities .card{margin:0}.platform-card .limit-control{gap:4px}.platform-card .limit-control label{max-width:34px}.platform-card{padding:20px}.platform-heading{gap:10px}.platform-heading b{font-size:16px}.app-icon{width:44px;height:44px}}
+@media(max-width:420px){main{padding:30px 16px 110px}h1{font-size:32px}.card{padding:20px}.tabbar{gap:75px}.pill{font-size:10px}.top{gap:6px}.limit-control label{max-width:40px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 </style></head><body><main>
-<div class="row top"><div><h1>⏱️ Tiempo de Leo</h1><small>Contadores diarios de pantallas</small></div><span class="pill" id="storageState">Guardado local</span></div>
-<section class="card"><div class="row"><label for="day"><b>Fecha</b></label><input id="day" type="date"></div><p id="summary" class="muted"></p><button class="secondary" id="today">Volver a hoy</button></section>
+<header class="row top"><div><p class="eyebrow">UN POCO MÁS DE EQUILIBRIO</p><h1>Tiempo de Leo<span style="color:#7885df">.</span></h1><small>Cada momento cuenta.</small></div><div class="avatar" aria-label="Perfil de Leo">L</div></header>
+<section class="card overview" id="inicio"><div class="row"><label for="day"><b>Tu día, a tu ritmo</b></label><input id="day" type="date"></div><p id="summary" class="muted"></p><div class="row"><button class="secondary" id="today">Volver a hoy</button><span class="pill" id="storageState">Guardado local</span></div></section><div class="section-label"><h2>Mis aplicaciones</h2><span>Un espacio para cada cosa</span></div>
 <div id="activities"></div>
-<section class="card"><h2>➕ Agregar plataforma</h2><p class="muted">Por ejemplo: Nintendo Switch, iPad, Roblox o televisión.</p>
+<section class="card add-card" id="agregar"><h2>Agregar plataforma</h2><p class="muted">Por ejemplo: Nintendo Switch, iPad, Roblox o televisión.</p>
 <form id="addForm" class="addform"><input id="newName" maxlength="36" required placeholder="Nombre de la plataforma" aria-label="Nombre de la plataforma">
 <input id="newMinutes" type="number" min="0" max="1440" value="30" required aria-label="Minutos diarios">
 <button class="primary" type="submit">Agregar plataforma</button></form></section>
-<section class="card"><div class="row"><h2>Registro diario</h2><button class="secondary" id="export">Exportar CSV</button></div>
+<section class="card history-card" id="registro"><div class="row"><h2>Tu actividad</h2><button class="secondary" id="export">Exportar CSV</button></div>
 <p class="muted">Últimos 14 días. Deslizá la tabla si hay muchas plataformas.</p><div id="history" class="scroll"></div></section>
-<p class="notice">🔔 Las alertas con sonido se reproducen mientras esta página está abierta y activa. iOS no garantiza que suenen con Safari cerrado o el iPhone bloqueado. Esta aplicación no bloquea otras apps ni dispositivos. Los datos se guardan localmente en el navegador, pero abrir el HTML como archivo puede limitar la persistencia; para uso estable conviene alojarlo en HTTPS.</p>
-</main>
+<details class="notice"><summary>Acerca de las alertas y tus datos</summary><p>Las alertas con sonido se reproducen mientras esta página está abierta y activa. iOS no garantiza que suenen con Safari cerrado o el iPhone bloqueado. Esta aplicación no bloquea otras apps ni dispositivos. Los datos se guardan localmente en el navegador, pero abrir el HTML como archivo puede limitar la persistencia; para uso estable conviene alojarlo en HTTPS.</p></details>
+</main><nav class="tabbar" aria-label="Navegación principal"><a href="#inicio" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Mi día</a><a href="#registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 20V12M12 20V4M19 20V8" stroke-linecap="round"/></svg>Actividad</a><a href="#agregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Agregar</a></nav>
 <script>
 (()=>{'use strict';
 const STORAGE='leo-timer-v1', DEFAULTS=[['ps','PlayStation',55],['yt','YouTube',40],['nf','Netflix',20]];
@@ -48,6 +58,17 @@ try{
 const save=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(db));$('storageState').textContent='Guardado local'}catch(e){$('storageState').textContent='No se pudo guardar';console.warn(e)}};
 const record=d=>{if(!db.days[d])db.days[d]={limits:{},used:{}};const r=db.days[d];r.limits??={};r.used??={};for(const p of db.platforms){if(r.limits[p.id]===undefined)r.limits[p.id]=p.limit;if(r.used[p.id]===undefined)r.used[p.id]=0;}return r};
 const format=s=>{s=Math.max(0,Math.ceil(s));return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`};
+function appIdentity(name){
+ const n=name.toLowerCase();
+ const svg=body=>`<svg viewBox="0 0 32 32" aria-hidden="true">${body}</svg>`;
+ if(/youtube/.test(n))return {color:'#ff3b48',kind:'Vídeos',icon:svg('<rect x="3" y="7" width="26" height="18" rx="6" fill="white"/><path d="m13 11 9 5-9 5z" fill="#ff3b48"/>')};
+ if(/netflix/.test(n))return {color:'#1d1d23',kind:'Series y películas',icon:svg('<path d="M9 5h5v22H9zM18 5h5v22h-5z" fill="#b1060e"/><path d="m9 5 9 22h5L14 5z" fill="#e50914"/>')};
+ if(/playstation|ps[45]?\b/.test(n))return {color:'#3674e3',kind:'Videojuegos',icon:svg('<path d="M13 4v22l5 2V10c0-2 3-1 3 2v8c7 2 8-8 3-11-3-2-7-4-11-5Z" fill="white"/><path d="m11 20-7 3c-4 2 1 5 7 4v-3l-3 1-2-1 5-2Zm9 1v3l5-2 2 1-7 3v3l10-4c5-3-3-6-10-4Z" fill="white"/>')};
+ if(/roblox/.test(n))return {color:'#343741',kind:'Videojuegos',icon:svg('<path fill="white" fill-rule="evenodd" d="m8 2 23 7-7 23-23-7Zm5 10-2 7 7 2 2-7Z"/>')};
+ if(/nintendo|switch/.test(n))return {color:'#f14655',kind:'Videojuegos',icon:svg('<rect x="5" y="4" width="22" height="24" rx="6" fill="none" stroke="white" stroke-width="2"/><path d="M16 4v24" stroke="white" stroke-width="2"/><circle cx="11" cy="11" r="3" fill="white"/><circle cx="22" cy="21" r="3" fill="white"/>')};
+ if(/ipad|tablet|iphone/.test(n))return {color:'#a477d5',kind:'Dispositivo',icon:svg('<rect x="7" y="3" width="18" height="26" rx="3" fill="none" stroke="white" stroke-width="2"/><path d="M13 25h6" stroke="white" stroke-width="2"/>')};
+ return {color:'#55aaa0',kind:'Tiempo de pantalla',icon:svg('<rect x="3" y="6" width="26" height="18" rx="4" fill="none" stroke="white" stroke-width="2"/><path d="M11 28h10M16 24v4m-3-17 7 4-7 4z" stroke="white" stroke-width="2" fill="none"/>')};
+}
 const clamp=n=>Math.max(0,Math.min(1440,Math.round(Number(n)||0)));
 let audioCtx=null;
 function sound(){try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=830;g.gain.value=.15;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.4)}catch(e){}}
@@ -105,9 +126,10 @@ function render(){
  $('summary').textContent=`Límite total: ${Math.floor(db.platforms.reduce((a,p)=>a+clamp(r.limits[p.id]),0)/60)} h ${db.platforms.reduce((a,p)=>a+clamp(r.limits[p.id]),0)%60} min`;
  $('activities').innerHTML=db.platforms.map(p=>{
   const max=clamp(r.limits[p.id])*60,used=Math.max(0,Number(r.used[p.id])||0),left=Math.max(0,max-used),isRunning=db.running?.id===p.id&&d===today();
+  const identity=appIdentity(p.name);
   const pct=max?Math.min(100,used/max*100):100;
-  return `<section class="card"><div class="row"><b style="font-size:19px">${escapeHTML(p.name)}</b><div><label for="lim-${escapeHTML(p.id)}">Límite (min) </label><input type="number" min="0" max="1440" id="lim-${escapeHTML(p.id)}" data-limit="${escapeHTML(p.id)}" value="${clamp(r.limits[p.id])}"></div></div>
-  <div class="clock" id="clock-${escapeHTML(p.id)}">${format(left)}</div><div class="track"><div class="fill" id="bar-${escapeHTML(p.id)}" style="width:${pct}%"></div></div>
+  return `<section class="card platform-card ${isRunning?'running':''}" style="--accent:${identity.color}"><div class="row"><div class="platform-heading"><span class="app-icon">${identity.icon}</span><div><b>${escapeHTML(p.name)}</b><small>${identity.kind}</small></div></div><div class="limit-control"><label for="lim-${escapeHTML(p.id)}">Límite min </label><input type="number" min="0" max="1440" id="lim-${escapeHTML(p.id)}" data-limit="${escapeHTML(p.id)}" value="${clamp(r.limits[p.id])}"></div></div>
+  <div class="clock-caption" style="margin-top:22px">Tiempo disponible</div><div class="clock" style="margin-top:0" id="clock-${escapeHTML(p.id)}">${format(left)}</div><div class="track"><div class="fill" id="bar-${escapeHTML(p.id)}" style="width:${pct}%"></div></div>
   <p class="status" id="status-${escapeHTML(p.id)}">${left<=0?'Tiempo agotado':isRunning?'Contando…':'En pausa'} · ${(used/60).toFixed(1)} min usados</p>
   <div class="actions"><button class="primary" data-start="${escapeHTML(p.id)}" ${d!==today()||isRunning||left<=0?'disabled':''}>${used>0?'Continuar':'Iniciar'}</button>
   <button class="secondary" data-pause="${escapeHTML(p.id)}" ${!isRunning?'disabled':''}>Pausar</button>
@@ -133,6 +155,7 @@ $('addForm').onsubmit=e=>{
  record($('day').value).limits[id]=limit;
  $('newName').value='';save();render();
 };
+document.querySelectorAll('.tabbar a').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.tabbar a').forEach(link=>link.classList.toggle('active',link===a))}));
 $('day').value=today();
 $('day').onchange=()=>{settle();render()};
 $('today').onclick=()=>{$('day').value=today();render()};

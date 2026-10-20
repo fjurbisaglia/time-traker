@@ -30,6 +30,7 @@ button{border-radius:13px;transition:transform .15s,background .15s;min-height:4
 </style></head><body><main>
 <header class="row top"><div><p class="eyebrow">UN POCO MÁS DE EQUILIBRIO</p><h1>Tiempo de Leo<span style="color:#7885df">.</span></h1><small>Cada momento cuenta.</small></div><div class="avatar" aria-label="Perfil de Leo">L</div></header>
 <section class="card overview" id="inicio"><div class="row"><label for="day"><b>Tu día, a tu ritmo</b></label><input id="day" type="date"></div><p id="summary" class="muted"></p><div class="row"><button class="secondary" id="today">Volver a hoy</button><span class="pill" id="storageState">Guardado local</span></div></section><div class="section-label"><h2>Mis aplicaciones</h2><span>Un espacio para cada cosa</span></div>
+<p id="dayContext" class="muted" role="status" style="font-size:13px;line-height:1.6"></p>
 <div id="activities"></div>
 <section class="card add-card" id="agregar"><h2>Agregar plataforma</h2><p class="muted">Por ejemplo: Nintendo Switch, iPad, Roblox o televisión.</p>
 <form id="addForm" class="addform"><input id="newName" maxlength="36" required placeholder="Nombre de la plataforma" aria-label="Nombre de la plataforma">
@@ -79,22 +80,24 @@ function settle(){
  if(now<=from)return;
  const p=db.platforms.find(p=>p.id===run.id);
  if(!p){db.running=null;save();return}
- let cursor=from;
- while(cursor<now){
-  const d=dayString(new Date(cursor)),next=new Date(new Date(cursor).getFullYear(),new Date(cursor).getMonth(),new Date(cursor).getDate()+1).getTime();
-  const until=Math.min(now,next),r=record(d),max=clamp(r.limits[p.id])*60;
-  const previous=Number(r.used[p.id])||0;
-  const current=Math.min(max,previous+(until-cursor)/1000);
-  r.used[p.id]=current;
-  if(d===today()){
-   const left=max-current;
-   if(left<=300&&left>0&&!run.warned){run.warned=true;alertUser(`A Leo le quedan 5 minutos de ${p.name}.`)}
-   if(left<=0&&!run.finished){run.finished=true;alertUser(`¡Se terminó el tiempo de ${p.name} por hoy!`)}
-  }
-  if(current>=max){db.running=null;break}
-  cursor=until;
+ // Older saved timers did not include their date. Recover it from their timestamp.
+ const d=run.day||dayString(new Date(from));
+ run.day=d;
+ const startOfDay=new Date(d+'T00:00:00');
+ const endOfDay=new Date(startOfDay.getFullYear(),startOfDay.getMonth(),startOfDay.getDate()+1).getTime();
+ if(!Number.isFinite(endOfDay)){db.running=null;save();return}
+ const until=Math.min(now,endOfDay),r=record(d),max=clamp(r.limits[p.id])*60;
+ const previous=Number(r.used[p.id])||0;
+ const current=Math.min(max,previous+Math.max(0,until-from)/1000);
+ r.used[p.id]=current;
+ if(d===today()){
+  const left=max-current;
+  if(left<=300&&left>0&&!run.warned){run.warned=true;alertUser(`A Leo le quedan 5 minutos de ${p.name}.`)}
+  if(left<=0&&!run.finished){run.finished=true;alertUser(`¡Se terminó el tiempo de ${p.name} por hoy!`)}
  }
- if(db.running)db.running.updatedAt=now;
+ // A session belongs to one day and never spends the following day's allowance.
+ if(current>=max||now>=endOfDay)db.running=null;
+ else db.running.updatedAt=now;
  save();
 }
 function pause(){settle();db.running=null;save();render()}
@@ -104,13 +107,13 @@ function start(id){
  const r=record(today()),p=db.platforms.find(p=>p.id===id);
  if(!p)return;
  if(r.used[id]>=clamp(r.limits[id])*60)return alert('Ya se agotó el tiempo permitido.');
- db.running={id,updatedAt:Date.now(),warned:clamp(r.limits[id])*60-r.used[id]<=300,finished:false};
+ db.running={id,day:today(),updatedAt:Date.now(),warned:clamp(r.limits[id])*60-r.used[id]<=300,finished:false};
  save();render();
 }
 function updateLimit(id,value){
  settle();const r=record($('day').value);
  r.limits[id]=clamp(value);
- if(db.running?.id===id&&$('day').value===today()&&r.used[id]>=r.limits[id]*60)db.running=null;
+ if(db.running?.id===id&&db.running.day===$('day').value&&r.used[id]>=r.limits[id]*60)db.running=null;
  save();render();
 }
 function removePlatform(id){
@@ -123,14 +126,15 @@ function removePlatform(id){
 }
 function render(){
  const d=$('day').value||today(),r=record(d);
+ $('dayContext').textContent=d>today()?'Planificación: los límites se guardan solo para esta fecha. Podrás iniciar los contadores cuando llegue ese día.':d<today()?'Historial de esta fecha. Los contadores solo se pueden iniciar hoy.':'Los contadores de hoy se detienen al terminar el día. Puedes preparar los límites de otras fechas sin interrumpirlos.';
  $('summary').textContent=`Límite total: ${Math.floor(db.platforms.reduce((a,p)=>a+clamp(r.limits[p.id]),0)/60)} h ${db.platforms.reduce((a,p)=>a+clamp(r.limits[p.id]),0)%60} min`;
  $('activities').innerHTML=db.platforms.map(p=>{
-  const max=clamp(r.limits[p.id])*60,used=Math.max(0,Number(r.used[p.id])||0),left=Math.max(0,max-used),isRunning=db.running?.id===p.id&&d===today();
+  const max=clamp(r.limits[p.id])*60,used=Math.max(0,Number(r.used[p.id])||0),left=Math.max(0,max-used),isRunning=db.running?.id===p.id&&db.running.day===d&&d===today();
   const identity=appIdentity(p.name);
   const pct=max?Math.min(100,used/max*100):100;
   return `<section class="card platform-card ${isRunning?'running':''}" style="--accent:${identity.color}"><div class="row"><div class="platform-heading"><span class="app-icon">${identity.icon}</span><div><b>${escapeHTML(p.name)}</b><small>${identity.kind}</small></div></div><div class="limit-control"><label for="lim-${escapeHTML(p.id)}">Límite min </label><input type="number" min="0" max="1440" id="lim-${escapeHTML(p.id)}" data-limit="${escapeHTML(p.id)}" value="${clamp(r.limits[p.id])}"></div></div>
   <div class="clock-caption" style="margin-top:22px">Tiempo disponible</div><div class="clock" style="margin-top:0" id="clock-${escapeHTML(p.id)}">${format(left)}</div><div class="track"><div class="fill" id="bar-${escapeHTML(p.id)}" style="width:${pct}%"></div></div>
-  <p class="status" id="status-${escapeHTML(p.id)}">${left<=0?'Tiempo agotado':isRunning?'Contando…':'En pausa'} · ${(used/60).toFixed(1)} min usados</p>
+  <p class="status" id="status-${escapeHTML(p.id)}">${left<=0?'Tiempo agotado':isRunning?'Contando…':d>today()?'Programado':d<today()?'Registro del día':'En pausa'} · ${(used/60).toFixed(1)} min usados</p>
   <div class="actions"><button class="primary" data-start="${escapeHTML(p.id)}" ${d!==today()||isRunning||left<=0?'disabled':''}>${used>0?'Continuar':'Iniciar'}</button>
   <button class="secondary" data-pause="${escapeHTML(p.id)}" ${!isRunning?'disabled':''}>Pausar</button>
   <button class="danger" data-remove="${escapeHTML(p.id)}">Eliminar</button></div></section>`;
@@ -158,7 +162,7 @@ $('addForm').onsubmit=e=>{
 document.querySelectorAll('.tabbar a').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.tabbar a').forEach(link=>link.classList.toggle('active',link===a))}));
 $('day').value=today();
 $('day').onchange=()=>{settle();render()};
-$('today').onclick=()=>{$('day').value=today();render()};
+$('today').onclick=()=>{settle();$('day').value=today();render()};
 $('export').onclick=()=>{
  settle();
  const header=['Fecha',...db.platforms.map(p=>p.name+' (min)')],rows=[header];
@@ -169,7 +173,7 @@ $('export').onclick=()=>{
 };
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){settle();render()}});
 window.addEventListener('pagehide',settle);
-setInterval(()=>{if(db.running){settle();if(!db.running){render();return}const id=db.running.id,r=record(today()),max=clamp(r.limits[id])*60,used=r.used[id]||0;const clock=$('clock-'+id),bar=$('bar-'+id),status=$('status-'+id);if(clock)clock.textContent=format(max-used);if(bar)bar.style.width=(max?Math.min(100,used/max*100):100)+'%';if(status)status.textContent=`Contando… · ${(used/60).toFixed(1)} min usados`}},1000);
+setInterval(()=>{if(db.running){settle();if(!db.running){render();return}if($('day').value!==db.running.day)return;const id=db.running.id,r=record(db.running.day),max=clamp(r.limits[id])*60,used=r.used[id]||0;const clock=$('clock-'+id),bar=$('bar-'+id),status=$('status-'+id);if(clock)clock.textContent=format(max-used);if(bar)bar.style.width=(max?Math.min(100,used/max*100):100)+'%';if(status)status.textContent=`Contando… · ${(used/60).toFixed(1)} min usados`}},1000);
 settle();render();
 })();
 </script></body></html>

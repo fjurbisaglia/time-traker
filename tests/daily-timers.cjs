@@ -7,7 +7,7 @@ function setup(saved){
  class Clock extends Date{constructor(...args){super(...(args.length?args:[now]))}static now(){return now}}
  const nodes=new Map();
  const get=id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',innerHTML:'',style:{},addEventListener(){}});return nodes.get(id)};
- const c={Date:Clock,document:{getElementById:get,querySelectorAll:()=>[],addEventListener(){},visibilityState:'hidden'},window:{addEventListener(){}},localStorage:{getItem:()=>saved?JSON.stringify(saved):null,setItem(){}},setInterval:fn=>tick=fn,setTimeout(){},alert(){},console};
+ const c={Date:Clock,document:{getElementById:get,querySelectorAll:()=>[],addEventListener(){},visibilityState:'hidden'},window:{addEventListener(){}},localStorage:{getItem:()=>saved?JSON.stringify(saved):null,setItem(){}},setInterval:(fn,ms)=>{if(ms===1000)tick=fn},setTimeout(){},alert(){},console};
  vm.runInNewContext(source,c);
  return {api:c.testApi,get,tick:()=>tick(),advance:ms=>now+=ms,setTime:time=>now=time};
 }
